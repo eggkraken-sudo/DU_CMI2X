@@ -274,6 +274,7 @@ void cmi01a_device::pitch_lsb_w(u8 data)
 {
 	m_pitch &= 0xf00;
 	m_pitch |= data;
+	if (m_run) run_voice();
 }
 
 u8 cmi01a_device::pitch_lsb_r()
