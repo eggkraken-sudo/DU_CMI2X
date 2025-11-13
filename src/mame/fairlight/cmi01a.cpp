@@ -645,7 +645,9 @@ void cmi01a_device::update_filters()
 	int fval = (m_octave << 5) + m_flt_latch;
 
 	// Calibrated using the graph page 133 of the CMI Mainframe Service Manual
+	constexpr double max_fc = 26000.0;	
 	double fc = 6410 * pow(1.02162, fval - 256);
+	fc = (fc > max_fc) ? max_fc : fc;
 	// -6dB cutoff frequency
 	double f0 = fc * 0.916;
 
