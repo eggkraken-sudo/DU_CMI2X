@@ -2162,32 +2162,61 @@ void cmi_state::cmi2x(machine_config &config)
 	FLOPPY_CONNECTOR(config, m_floppy[0], cmi2x_floppies, "8dsdd", floppy_image_device::default_mfm_floppy_formats);
 	FLOPPY_CONNECTOR(config, m_floppy[1], cmi2x_floppies, "8dsdd", floppy_image_device::default_mfm_floppy_formats);
 
-	SPEAKER(config, "mono").front_center();
+//Channel Cards
 
-	// Channel cards
+	SPEAKER(config, "card_1").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[0], SYSTEM_CAS_CLOCK, 0);
-	m_channels[0]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[0]->add_route(ALL_OUTPUTS, "card_1", 0.125);
 	m_channels[0]->irq_callback().set(FUNC(cmi_state::channel_irq<0>));
+
+
+	SPEAKER(config, "card_2").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[1], SYSTEM_CAS_CLOCK, 1);
-	m_channels[1]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[1]->add_route(ALL_OUTPUTS, "card_2", 0.125);
 	m_channels[1]->irq_callback().set(FUNC(cmi_state::channel_irq<1>));
+
+
+	SPEAKER(config, "card_3").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[2], SYSTEM_CAS_CLOCK, 2);
-	m_channels[2]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[2]->add_route(ALL_OUTPUTS, "card_3", 0.125);
 	m_channels[2]->irq_callback().set(FUNC(cmi_state::channel_irq<2>));
+
+
+	SPEAKER(config, "card_4").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[3], SYSTEM_CAS_CLOCK, 3);
-	m_channels[3]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[3]->add_route(ALL_OUTPUTS, "card_4", 0.125);
 	m_channels[3]->irq_callback().set(FUNC(cmi_state::channel_irq<3>));
+
+
+	SPEAKER(config, "card_5").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[4], SYSTEM_CAS_CLOCK, 4);
-	m_channels[4]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[4]->add_route(ALL_OUTPUTS, "card_5", 0.125);
 	m_channels[4]->irq_callback().set(FUNC(cmi_state::channel_irq<4>));
+
+
+	SPEAKER(config, "card_6").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[5], SYSTEM_CAS_CLOCK, 5);
-	m_channels[5]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[5]->add_route(ALL_OUTPUTS, "card_6", 0.125);
 	m_channels[5]->irq_callback().set(FUNC(cmi_state::channel_irq<5>));
+
+
+	SPEAKER(config, "card_7").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[6], SYSTEM_CAS_CLOCK, 6);
-	m_channels[6]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[6]->add_route(ALL_OUTPUTS, "card_7", 0.125);
 	m_channels[6]->irq_callback().set(FUNC(cmi_state::channel_irq<6>));
+
+
+	SPEAKER(config, "card_8").front_center();
+
 	CMI01A_CHANNEL_CARD(config, m_channels[7], SYSTEM_CAS_CLOCK, 7);
-	m_channels[7]->add_route(ALL_OUTPUTS, "mono", 0.125);
+	m_channels[7]->add_route(ALL_OUTPUTS, "card_8", 0.125);
 	m_channels[7]->irq_callback().set(FUNC(cmi_state::channel_irq<7>));
 }
 
