@@ -9,7 +9,7 @@
 #include "emu.h"
 #include "cmi01a.h"
 
-#define VERBOSE     (1)
+#define VERBOSE     (0)
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(CMI01A_CHANNEL_CARD, cmi01a_device, "cmi_01a", "Fairlight CMI-01A Channel Card")
