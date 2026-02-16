@@ -166,7 +166,8 @@ void cmi01a_device::device_reset()
 	m_bcas_q2 = false;
 	m_bcas_q1 = false;
 	m_not_rstb = true;
-
+	m_mode_one = false;
+	
 	m_ptm_o1 = 0;
 	m_ptm_o2 = 0;
 	m_ptm_o3 = 0;
@@ -374,16 +375,30 @@ void cmi01a_device::set_run_load_xor(const bool run_load_xor)
 		return;
 
 	m_run_load_xor = run_load_xor;
-	if (m_rstb_pulse_timer->remaining().is_never())
-	{
-		m_rstb_pulse_timer->adjust(attotime::from_nsec(27500));
+	if (m_mode_one) {
+		if (m_rstb_pulse_timer->remaining().is_never())
+		{
+			m_rstb_pulse_timer->adjust(attotime::from_nsec(27500));
+			m_new_addr = true;
+		}
+		else
+		{
+			m_rstb_pulse_timer->adjust(attotime::never);
+		}
+		set_not_rstb(m_run_load_xor != m_delayed_inverted_run_load);
+	}else{
 		m_new_addr = true;
+
+		// pulse /RSTB low
+		m_not_rstb = false;
+		set_gzx(true);
+		set_wave_addr_lsb(0);
+		set_wave_addr_msb(0x80 | m_ws);
+
+		// return /RSTB high
+		m_not_rstb = true;
+		set_gzx(false);
 	}
-	else
-	{
-		m_rstb_pulse_timer->adjust(attotime::never);
-	}
-	set_not_rstb(m_run_load_xor != m_delayed_inverted_run_load);
 }
 
 TIMER_CALLBACK_MEMBER(cmi01a_device::rstb_pulse_cb)
@@ -413,11 +428,26 @@ void cmi01a_device::update_bcas_q1_enable()
 
 	if (!old_enable && m_bcas_q1_enabled)
 	{
-		m_bcas_q1_timer->adjust(attotime::from_hz(clock() / 2), 0, attotime::from_hz(clock() / 2));
+		if (m_mode_one){
+			m_bcas_q1_timer->adjust(attotime::from_hz(clock() / 2), 0, attotime::from_hz(clock() / 2));
+		}else{
+			if (m_not_load)
+				m_ptm->set_ext_clock(0, clock() / 8.0);
+			else
+				m_ptm->set_ext_clock(0, 0.0);
+			m_ptm->set_ext_clock(1, clock() / 4.0);
+			m_ptm->set_ext_clock(2, clock() / 4.0);
+		}
 	}
 	else if (old_enable && !m_bcas_q1_enabled)
 	{
-		m_bcas_q1_timer->adjust(attotime::never);
+		if (m_mode_one){
+			m_bcas_q1_timer->adjust(attotime::never);
+		}else{
+			m_ptm->set_ext_clock(0, 0.0);
+			m_ptm->set_ext_clock(1, 0.0);
+			m_ptm->set_ext_clock(2, 0.0);
+		}
 	}
 }
 
@@ -458,10 +488,19 @@ void cmi01a_device::set_zx_flipflop_state(const bool zx_ff)
 
 inline void cmi01a_device::pulse_zcint()
 {
-	set_not_zcint(false);
-	m_zcint_pulse_timer->adjust(attotime::from_nsec(2750));
+	if (m_mode_one){
+		set_not_zcint(false);
+		m_zcint_pulse_timer->adjust(attotime::from_nsec(2750));
+	}else{
+		// pulse /ZCINT low
+		m_pia[0]->ca1_w(1);
+		set_gzx(true);
+			
+		// return /ZCINT high
+		m_pia[0]->ca1_w(0);
+		set_gzx(false);
+	}
 }
-
 TIMER_CALLBACK_MEMBER(cmi01a_device::zcint_pulse_cb)
 {
 	set_not_zcint(true);
@@ -751,7 +790,11 @@ void cmi01a_device::set_zx(const bool zx)
 void cmi01a_device::update_ptm_c1()
 {
 	const bool old_ptm_c1 = m_ptm_c1;
-	m_ptm_c1 = (m_not_load && m_bcas_q2) || (!m_not_load && !m_zx);
+	if (m_mode_one){
+		m_ptm_c1 = (m_not_load && m_bcas_q2) || (!m_not_load && !m_zx);
+	}else{
+		m_ptm_c1 = !m_not_load && !m_zx;
+	}
 	if (old_ptm_c1 != m_ptm_c1)
 		m_ptm->set_c1(m_ptm_c1);
 }
@@ -832,7 +875,19 @@ void cmi01a_device::write(offs_t offset, u8 data)
 			m_ptm->write((a2 << 2) | (a1 << 1) | a0, data);
 			break;
 		}
-
+		case 0x1a:
+			//only sent when voice is Mode 1 - part of cpu pulse?
+			if (!m_mode_one) {
+				m_mode_one = true;
+			}
+			break;
+		//case 0x1b:
+			//mode 1 related
+		case 0xff: //default to mode 4
+			if (m_mode_one) {
+				m_mode_one = false;
+			}
+			break;
 		default:
 			LOG("%s: Unknown channel card write to E0%02X = %02X\n", machine().describe_context(), offset, data);
 			break;

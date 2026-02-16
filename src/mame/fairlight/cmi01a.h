@@ -157,7 +157,8 @@ private:
 	bool        m_bcas_q1_enabled = true;
 	bool        m_bcas_q1 = false;
 	bool        m_bcas_q2 = false;
-
+	bool        m_mode_one = false;
+	
 	int         m_env_dir = 0;
 	u8          m_env = 0;
 	u8          m_env_divider = 0;
