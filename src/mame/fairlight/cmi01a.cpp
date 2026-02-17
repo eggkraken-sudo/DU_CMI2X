@@ -875,14 +875,15 @@ void cmi01a_device::write(offs_t offset, u8 data)
 			m_ptm->write((a2 << 2) | (a1 << 1) | a0, data);
 			break;
 		}
-		case 0x1a: //Mode 1 sets 80 - this and 0x1b some kind of clock signal?
+		case 0x1a: //Mode 1 sets FF most of the time - this and 0x1b some kind of clock signal?
 			if (!m_mode_one){
 				m_mode_one = true;
 				//logerror("Switched to Mode 1");
 			}
 			break;
-		//case 0x1b: Mode 1 sets 00
-		case 0x01: //FF = Note on 00 = Note off? - using m_new_addr because it seems to be where this info is going - I don't know how to read this directly
+		//case 0x1b: Mode 1 sets FF most of the time - purpose of this and 0x1a unknown
+
+		case 0x01: //FF = Note on 00 = Note off? Has other values for different note pitches in Mode 1 - using m_new_addr because it seems to be where this info is going - I don't know how to read this directly
 			if (m_mode_one && !m_new_addr) { //in mode 1 and note has ended
 				m_mode_one = false;
 				//logerror("Switched to Mode 4");
