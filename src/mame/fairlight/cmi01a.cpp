@@ -875,17 +875,17 @@ void cmi01a_device::write(offs_t offset, u8 data)
 			m_ptm->write((a2 << 2) | (a1 << 1) | a0, data);
 			break;
 		}
-		case 0x1a:
-			//only sent when voice is Mode 1 - part of cpu pulse?
-			if (!m_mode_one) {
+		case 0x1a: //Mode 1 sets 80 - this and 0x1b some kind of clock signal?
+			if (!m_mode_one){
 				m_mode_one = true;
+				//logerror("Switched to Mode 1");
 			}
 			break;
-		//case 0x1b:
-			//mode 1 related
-		case 0xff: //default to mode 4
-			if (m_mode_one) {
+		//case 0x1b: Mode 1 sets 00
+		case 0x01: //FF = Note on 00 = Note off? - using m_new_addr because it seems to be where this info is going - I don't know how to read this directly
+			if (m_mode_one && !m_new_addr) { //in mode 1 and note has ended
 				m_mode_one = false;
+				//logerror("Switched to Mode 4");
 			}
 			break;
 		default:

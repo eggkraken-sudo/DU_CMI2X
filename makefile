@@ -12,9 +12,16 @@
 #################   BEGIN USER-CONFIGURABLE OPTIONS   #####################
 ###########################################################################
 
+ OPTIMIZE=3
+      LDOPTS=-FUSE-LD=LLD
+      DEBUG=0
+      PROFILER=0
+      SYMBOLS=0
+      STRIP_SYMBOLS=1
+
 # REGENIE = 1
 # VERBOSE = 1
-# NOWERROR = 1
+NOWERROR = 1
 # IGNORE_GIT = 1
 
 # TARGET = mame
