@@ -1076,7 +1076,7 @@ void cmi_state::midicpu_map(address_map &map)
 	map(0x040000, 0x05ffff).rw(FUNC(cmi_state::midi_dma_r), FUNC(cmi_state::midi_dma_w));
 	map(0x060000, 0x06000f).rw(m_midi_ptm[0], FUNC(ptm6840_device::read), FUNC(ptm6840_device::write)).umask16(0xff00);
 	map(0x060010, 0x06001f).rw(m_midi_ptm[1], FUNC(ptm6840_device::read), FUNC(ptm6840_device::write)).umask16(0xff00);
-	map(0x060020, 0x06005f).rw(m_midi_acia[0], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
+	map(0x060020, 0x06002f).rw(m_midi_acia[0], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
 	map(0x060030, 0x06003f).rw(m_midi_acia[1], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
 	map(0x060040, 0x06004f).rw(m_midi_acia[2], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
 	map(0x060050, 0x06005f).rw(m_midi_acia[3], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
@@ -2124,11 +2124,11 @@ void cmi_state::cmi2x(machine_config &config)
 	clock_device &midi_clock(CLOCK(config, "midi_clock", 20_MHz_XTAL / 10));
 	midi_clock.signal_handler().set(m_midi_acia[0], FUNC(acia6850_device::write_rxc));
 	midi_clock.signal_handler().append(m_midi_acia[0], FUNC(acia6850_device::write_txc));
-	//midi_clock.signal_handler().append(m_midi_acia[1], FUNC(acia6850_device::write_rxc));
-	//midi_clock.signal_handler().append(m_midi_acia[1], FUNC(acia6850_device::write_txc));
-	//midi_clock.signal_handler().append(m_midi_acia[2], FUNC(acia6850_device::write_rxc));
-	//midi_clock.signal_handler().append(m_midi_acia[2], FUNC(acia6850_device::write_txc));
-	//midi_clock.signal_handler().append(m_midi_acia[3], FUNC(acia6850_device::write_txc));
+	midi_clock.signal_handler().append(m_midi_acia[1], FUNC(acia6850_device::write_rxc));
+	midi_clock.signal_handler().append(m_midi_acia[1], FUNC(acia6850_device::write_txc));
+	midi_clock.signal_handler().append(m_midi_acia[2], FUNC(acia6850_device::write_rxc));
+	midi_clock.signal_handler().append(m_midi_acia[2], FUNC(acia6850_device::write_txc));
+	midi_clock.signal_handler().append(m_midi_acia[3], FUNC(acia6850_device::write_txc));
 
 	for (int i = 0; i < 4; i++)
 	{
