@@ -104,6 +104,7 @@
 #include "emupal.h"
 #include "screen.h"
 #include "speaker.h"
+#include "sound/spkrdev.h"
 
 #define LOG_CHANNELS (1U << 1)
 
@@ -192,6 +193,7 @@ public:
 		, m_maincpu2(*this, "maincpu2")
 		, m_midicpu(*this, "smptemidi")
 		, m_cmi07cpu(*this, "cmi07cpu")
+		, m_speaker(*this, "speaker")
 		, m_maincpu1_irq_merger(*this, "maincpu1_irq_merger")
 		, m_maincpu2_irq0_merger(*this, "maincpu2_irq0_merger")
 		, m_msm5832(*this, "msm5832")
@@ -323,6 +325,7 @@ public:
 	u8 master_tune_r();
 	void cmi02_ptm_irq(int state);
 	void cmi02_ptm_o2(int state);
+	void cmi02_ptm_o1(int state);
 	void cmi02_pia2_irqa_w(int state);
 	void cmi02_pia2_cb2_w(int state);
 
@@ -348,6 +351,8 @@ protected:
 	required_device<mc6809e_device> m_maincpu2;
 	required_device<m68000_device> m_midicpu;
 	required_device<mc6809e_device> m_cmi07cpu;
+	
+	required_device<speaker_sound_device> m_speaker;
 
 	required_device<input_merger_any_high_device> m_maincpu1_irq_merger;
 	required_device<input_merger_any_high_device> m_maincpu2_irq0_merger;
@@ -1469,6 +1474,11 @@ void cmi_state::cmi02_ptm_o2(int state)
 	m_cmi02_ptm->set_c3(state);
 }
 
+void cmi_state::cmi02_ptm_o1(int state)
+{
+	m_speaker->level_w(state);
+}
+
 void cmi_state::cmi02_pia2_irqa_w(int state)
 {
 	LOG("%s: cmi02_pia2_irqa_w: %d\n", machine().describe_context(), state);
@@ -2077,6 +2087,7 @@ void cmi_state::cmi2x(machine_config &config)
 	PTM6840(config, m_cmi02_ptm, SYSTEM_CAS_CLOCK);
 	m_cmi02_ptm->set_external_clocks(0, 0, 0);
 	m_cmi02_ptm->o2_callback().set(FUNC(cmi_state::cmi02_ptm_o2));
+	m_cmi02_ptm->o1_callback().set(FUNC(cmi_state::cmi02_ptm_o1));
 	m_cmi02_ptm->irq_callback().set(FUNC(cmi_state::cmi02_ptm_irq));
 
 	clock_device &q133_acia_clock(CLOCK(config, "q133_acia_clock", 1.8432_MHz_XTAL / 12));
@@ -2218,6 +2229,11 @@ void cmi_state::cmi2x(machine_config &config)
 	CMI01A_CHANNEL_CARD(config, m_channels[7], SYSTEM_CAS_CLOCK, 7);
 	m_channels[7]->add_route(ALL_OUTPUTS, "card_8", 0.125);
 	m_channels[7]->irq_callback().set(FUNC(cmi_state::channel_irq<7>));
+	
+	//Click out - needs accuracy verification
+	SPEAKER(config, "click_out").front_center();
+	SPEAKER_SOUND(config, m_speaker);
+	m_speaker->add_route(0, "click_out", 0.75);
 }
 
 ROM_START( cmi2x )
