@@ -222,6 +222,7 @@ public:
 		, m_lp_touch_port(*this, "LP_TOUCH")
 		, m_cmi07_ram(*this, "cmi07_ram")
 		, m_cpu_periphs(*this, "cpu%u_periphs", 1U)
+		, m_click_out(*this, "click_out")
 	{
 	}
 
@@ -400,6 +401,8 @@ private:
 	emu_timer *m_map_switch_timer = nullptr;
 	emu_timer *m_hblank_timer = nullptr;
 	emu_timer *m_jam_timeout_timer = nullptr;
+	
+	output_finder<> m_click_out;
 
 	u8 m_video_data = 0;
 
@@ -1477,6 +1480,7 @@ void cmi_state::cmi02_ptm_o2(int state)
 void cmi_state::cmi02_ptm_o1(int state)
 {
 	m_speaker->level_w(state);
+	m_click_out = state;
 }
 
 void cmi_state::cmi02_pia2_irqa_w(int state)
@@ -1515,7 +1519,10 @@ u8 cmi_state::cmi02_r(offs_t offset)
 		{
 			case 0x20: case 0x21: case 0x22: case 0x23:
 				return m_cmi02_pia[0]->read(offset & 3);
-
+				
+			case 0x24: case 0x25:
+				return 0x80;
+				
 			case 0x26:
 				m_maincpu2->set_input_line(INPUT_LINE_HALT, ASSERT_LINE);
 				/* LS123 one-shot with 10n and 150k */
@@ -1945,6 +1952,8 @@ void cmi_state::machine_start()
 {
 	m_q133_rom = (u8 *)m_q133_region->base();
 
+	m_click_out.resolve();
+	
 	// allocate timers for the built-in two channel timer
 	m_map_switch_timer = timer_alloc(FUNC(cmi_state::switch_map), this);
 	m_hblank_timer = timer_alloc(FUNC(cmi_state::hblank), this);
