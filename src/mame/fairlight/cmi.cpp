@@ -193,7 +193,7 @@ public:
 		, m_maincpu2(*this, "maincpu2")
 		, m_midicpu(*this, "smptemidi")
 		, m_cmi07cpu(*this, "cmi07cpu")
-		, m_speaker(*this, "speaker")
+		, m_speaker(*this, "speaker_%u", 0U)
 		, m_maincpu1_irq_merger(*this, "maincpu1_irq_merger")
 		, m_maincpu2_irq0_merger(*this, "maincpu2_irq0_merger")
 		, m_msm5832(*this, "msm5832")
@@ -202,6 +202,7 @@ public:
 		, m_q133_ptm(*this, "q133_ptm")
 		, m_q133_acia(*this, "q133_acia_%u", 0U)
 		, m_q133_region(*this, "q133")
+		, m_clock(*this, "fake_clock")
 		, m_q219_pia(*this, "q219_pia")
 		, m_q219_ptm(*this, "q219_ptm")
 		, m_cmi02_pia(*this, "cmi02_pia_%u", 1U)
@@ -220,6 +221,7 @@ public:
 		, m_lp_x_port(*this, "LP_X")
 		, m_lp_y_port(*this, "LP_Y")
 		, m_lp_touch_port(*this, "LP_TOUCH")
+		, m_faders(*this, "tempo_in")
 		, m_cmi07_ram(*this, "cmi07_ram")
 		, m_cpu_periphs(*this, "cpu%u_periphs", 1U)
 		, m_click_out(*this, "click_out")
@@ -263,6 +265,11 @@ public:
 	void cmi_iix_vblank(int state);
 	u8 vfetch1_r(offs_t offset);
 	u8 vfetch2_r(offs_t offset);
+	
+	void write_to_click_in(int state);
+	u32 external_tempo = 120;
+	
+	DECLARE_INPUT_CHANGED_MEMBER(tempo_change);
 
 	// Video-related
 	u8 video_r(offs_t offset);
@@ -353,7 +360,7 @@ protected:
 	required_device<m68000_device> m_midicpu;
 	required_device<mc6809e_device> m_cmi07cpu;
 	
-	required_device<speaker_sound_device> m_speaker;
+	required_device_array<speaker_sound_device, 2> m_speaker;
 
 	required_device<input_merger_any_high_device> m_maincpu1_irq_merger;
 	required_device<input_merger_any_high_device> m_maincpu2_irq0_merger;
@@ -364,6 +371,8 @@ protected:
 	required_device_array<mos6551_device, 4> m_q133_acia;
 	required_memory_region m_q133_region;
 
+	required_device<clock_device> m_clock;
+	
 	required_device<pia6821_device> m_q219_pia;
 	required_device<ptm6840_device> m_q219_ptm;
 
@@ -389,6 +398,8 @@ protected:
 	required_ioport m_lp_x_port;
 	required_ioport m_lp_y_port;
 	required_ioport m_lp_touch_port;
+	
+	required_ioport m_faders;
 
 	required_shared_ptr<u8> m_cmi07_ram;
 
@@ -1020,6 +1031,18 @@ void cmi_state::midi_ptm0_c3_w(int state)
 	m_midi_ptm[1]->set_clock(2, state);
 }
 
+DECLARE_INPUT_CHANGED_MEMBER(cmi_state::tempo_change)
+{
+	external_tempo = m_faders->read();
+	external_tempo = external_tempo*6.4;
+	m_clock->set_unscaled_clock(external_tempo);
+}
+void cmi_state::write_to_click_in(int state)
+{
+	m_speaker[1]->level_w(state);
+	m_cmi02_ptm->set_c2(state);
+}
+
 void cmi_state::midi_latch_w(u8 data)
 {
 	const u8 bit_offset = data & 0x7;
@@ -1146,6 +1169,9 @@ static INPUT_PORTS_START( cmi2x )
 
 	PORT_START("LP_TOUCH")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_NAME ( "Lightpen Touch" ) PORT_CODE( MOUSECODE_BUTTON1 )
+	PORT_START("tempo_in")
+	PORT_ADJUSTER(120, "External Tempo") PORT_MINMAX(15,255) //should go up to 781 but it wraps around and I don't know why + this is temporary anyways
+		PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_state::tempo_change),0)
 INPUT_PORTS_END
 
 template <int CpuNum> u8 cmi_state::scratch_ram_r(offs_t offset)
@@ -1479,7 +1505,7 @@ void cmi_state::cmi02_ptm_o2(int state)
 
 void cmi_state::cmi02_ptm_o1(int state)
 {
-	m_speaker->level_w(state);
+	m_speaker[0]->level_w(state);
 	m_click_out = state;
 }
 
@@ -2101,6 +2127,9 @@ void cmi_state::cmi2x(machine_config &config)
 
 	clock_device &q133_acia_clock(CLOCK(config, "q133_acia_clock", 1.8432_MHz_XTAL / 12));
 	q133_acia_clock.signal_handler().set(FUNC(cmi_state::q133_acia_clock));
+	
+	clock_device &fake_sync(CLOCK(config, "fake_clock", 120*6.4)); //sync speed in hz at lowest resolution (SYNC:EXT)
+	fake_sync.signal_handler().set(FUNC(cmi_state::write_to_click_in)); //temp
 
 	for (auto &acia : m_q133_acia)
 		MOS6551(config, acia, 1.8432_MHz_XTAL).set_xtal(1.8432_MHz_XTAL);
@@ -2241,8 +2270,13 @@ void cmi_state::cmi2x(machine_config &config)
 	
 	//Click out - needs accuracy verification
 	SPEAKER(config, "click_out").front_center();
-	SPEAKER_SOUND(config, m_speaker);
-	m_speaker->add_route(0, "click_out", 0.75);
+	SPEAKER_SOUND(config, m_speaker[0]);
+	m_speaker[0]->add_route(0, "click_out", 0.75);
+	
+	//sound out from fake sync
+	//SPEAKER(config, "fake_sync_out").front_center();
+	//SPEAKER_SOUND(config, m_speaker[1]);
+	//m_speaker[1]->add_route(0, "fake_sync_out", 0.1); //this is VERY loud
 }
 
 ROM_START( cmi2x )
