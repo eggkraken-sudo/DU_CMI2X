@@ -2275,7 +2275,7 @@ void cmi_state::cmi2x(machine_config &config)
 	
 	//sound out from fake sync
 	//SPEAKER(config, "fake_sync_out").front_center();
-	//SPEAKER_SOUND(config, m_speaker[1]);
+	SPEAKER_SOUND(config, m_speaker[1]);
 	//m_speaker[1]->add_route(0, "fake_sync_out", 0.1); //this is VERY loud
 }
 
