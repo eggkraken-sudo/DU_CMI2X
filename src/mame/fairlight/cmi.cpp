@@ -412,6 +412,7 @@ private:
 	emu_timer *m_map_switch_timer = nullptr;
 	emu_timer *m_hblank_timer = nullptr;
 	emu_timer *m_jam_timeout_timer = nullptr;
+	emu_timer *m_metronome_click_timer = nullptr;
 	
 	output_finder<> m_click_out;
 
@@ -478,6 +479,7 @@ private:
 	int       m_cmi02_ptm_irq = 0;
 	u8   m_cmi02_pia_chsel = 0;
 	u8   m_master_tune = 0;
+	TIMER_CALLBACK_MEMBER(metronome_click);
 };
 
 /**************************************
@@ -1505,10 +1507,20 @@ void cmi_state::cmi02_ptm_o2(int state)
 
 void cmi_state::cmi02_ptm_o1(int state)
 {
+	m_metronome_click_timer->adjust(attotime::never);
+	if (m_click_out != state){ //extra click prevention
 	m_speaker[0]->level_w(state);
+	}
 	m_click_out = state;
+	m_metronome_click_timer->adjust(attotime::from_usec(400));
 }
 
+TIMER_CALLBACK_MEMBER(cmi_state::metronome_click)
+{
+	m_speaker[0]->level_w(2);
+	
+	m_metronome_click_timer->adjust(attotime::never);
+}
 void cmi_state::cmi02_pia2_irqa_w(int state)
 {
 	LOG("%s: cmi02_pia2_irqa_w: %d\n", machine().describe_context(), state);
@@ -1984,7 +1996,8 @@ void cmi_state::machine_start()
 	m_map_switch_timer = timer_alloc(FUNC(cmi_state::switch_map), this);
 	m_hblank_timer = timer_alloc(FUNC(cmi_state::hblank), this);
 	m_jam_timeout_timer = timer_alloc(FUNC(cmi_state::jam_timeout), this);
-
+	m_metronome_click_timer = timer_alloc(FUNC(cmi_state::metronome_click), this);
+	
 	m_map_switch_timer->adjust(attotime::never);
 	m_hblank_timer->adjust(attotime::never);
 	m_jam_timeout_timer->adjust(attotime::never);
@@ -2270,7 +2283,12 @@ void cmi_state::cmi2x(machine_config &config)
 	
 	//Click out - needs accuracy verification
 	SPEAKER(config, "click_out").front_center();
+	static const double speaker_levels[3] = {0.2, 0.8, 0.5};
 	SPEAKER_SOUND(config, m_speaker[0]);
+	m_speaker[0]->set_levels(3, speaker_levels);
+	
+	//todo: sallen-key bandpass filter? what parameters?
+	
 	m_speaker[0]->add_route(0, "click_out", 0.75);
 	
 	//sound out from fake sync
