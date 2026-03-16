@@ -1512,7 +1512,7 @@ void cmi_state::cmi02_ptm_o1(int state)
 	m_speaker[0]->level_w(state);
 	}
 	m_click_out = state;
-	m_metronome_click_timer->adjust(attotime::from_usec(400));
+	m_metronome_click_timer->adjust(attotime::from_usec(225));
 }
 
 TIMER_CALLBACK_MEMBER(cmi_state::metronome_click)
