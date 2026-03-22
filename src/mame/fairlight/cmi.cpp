@@ -315,16 +315,8 @@ public:
 	// MIDI/SMPTE
 	void midi_dma_w(offs_t offset, u16 data, u16 mem_mask = ~0);
 	u16 midi_dma_r(offs_t offset);
-	void midi_ptm0_c2_w(int state);
 	void midi_ptm0_c3_w(int state);
 	void midi_latch_w(u8 data);
-	u8 m_clk_1 = 0;
-	u8 m_clk_2 = 0;
-	bool int4_asserted = false;
-	u8 m_interruptfour_counter = 0;
-	u8 m_previous_clock = 0;
-	u8 smidi_shifter_data = 0; //don't need this quite yet
-	void smidi_register_w(u16 data);
 
 	// Floppy
 	void fdc_w(offs_t offset, u8 data);
@@ -1041,25 +1033,6 @@ void cmi_state::midi_ptm0_c3_w(int state)
 	m_midi_ptm[1]->set_clock(2, state);
 }
 
-void cmi_state::midi_ptm0_c2_w(int state){
-	
-	m_clk_2 = state;
-	if (m_previous_clock == 0 && state == 1) //74ls74 flips on rising edge of CLK2 to generate CLK1
-	{
-		m_clk_1 = 1 - m_clk_1;
-		
-		if (m_clk_1 == 1){
-		m_interruptfour_counter +=1;
-		}
-		
-		if (m_interruptfour_counter == 16){
-		m_midicpu->set_input_line(M68K_IRQ_4, ASSERT_LINE);
-		int4_asserted = true;
-		m_interruptfour_counter = 0;
-		}
-	}
-	m_previous_clock = state;
-}
 DECLARE_INPUT_CHANGED_MEMBER(cmi_state::tempo_change)
 {
 	external_tempo = m_faders->read();
@@ -1108,14 +1081,6 @@ void cmi_state::midi_latch_w(u8 data)
 	}
 }
 
-void cmi_state::smidi_register_w(u16 data)
-{
-	smidi_shifter_data = data;
-	if (int4_asserted){
-		m_midicpu->set_input_line(M68K_IRQ_4, CLEAR_LINE);
-		int4_asserted = false;
-		}
-}
 void cmi_state::maincpu1_map(address_map &map)
 {
 	map(0x0000, 0x7fff).rw(&cmi_state::ram_range_r<0, 0x0000>, "cmi_state::ram_range_r<0, 0x0000>",
@@ -1148,7 +1113,7 @@ void cmi_state::midicpu_map(address_map &map)
 	map(0x060030, 0x06003f).rw(m_midi_acia[1], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
 	map(0x060040, 0x06004f).rw(m_midi_acia[2], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
 	map(0x060050, 0x06005f).rw(m_midi_acia[3], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
-	map(0x060060, 0x06007f).w(FUNC(cmi_state::smidi_register_w));
+	//map(0x060060, 0x06007f).w(FUNC(cmi_state::smidi_register_w));
 	map(0x080000, 0x083fff).ram();
 }
 
@@ -2210,7 +2175,7 @@ void cmi_state::cmi2x(machine_config &config)
 	PTM6840(config, m_midi_ptm[0], 20_MHz_XTAL / 10); //same clock as the MIDI ACIAs
 	m_midi_ptm[0]->set_external_clocks(0, 384000, 0); // C1 is 0, C2 is 384kHz per schematic block diagram, C3 is CLICK SYNC IN
 	//m_midi_ptm[0]->o1_callback().set(FUNC(cmi_state::midi_ptm0_c1_w)); // TIMER 1A O/P per schematic
-	m_midi_ptm[0]->o2_callback().set(FUNC(cmi_state::midi_ptm0_c2_w)); // CLK 2 per schematic
+	//m_midi_ptm[0]->o2_callback().set(FUNC(cmi_state::midi_ptm0_c2_w)); // CLK 2 per schematic
 	m_midi_ptm[0]->o3_callback().set(FUNC(cmi_state::midi_ptm0_c3_w));
 
 	PTM6840(config, m_midi_ptm[1], 20_MHz_XTAL / 10); // entirely clocked by PTM 0
