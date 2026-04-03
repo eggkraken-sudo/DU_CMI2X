@@ -208,10 +208,9 @@ public:
 		, m_cmi02_pia(*this, "cmi02_pia_%u", 1U)
 		, m_cmi02_ptm(*this, "cmi02_ptm")
 		, m_cmi07_ptm(*this, "cmi07_ptm")
-		, m_midi_ptm(*this, "midi_ptm_%u", 1U)
-		, m_midi_acia(*this, "midi_acia_%u", 1U)
-		, m_midi_out(*this, "midi_out_%u", 1U)
-		, m_midi_in(*this, "midi_in_%u", 1U)
+		, m_midi_acia(*this, "midi_acia")
+		, m_midi_out(*this, "midi_out")
+		, m_midi_in(*this, "midi_in")
 		, m_qfc9_region(*this, "qfc9")
 		, m_floppy(*this, "wd1791:%u", 0U)
 		, m_wd1791(*this, "wd1791")
@@ -315,7 +314,6 @@ public:
 	// MIDI/SMPTE
 	void midi_dma_w(offs_t offset, u16 data, u16 mem_mask = ~0);
 	u16 midi_dma_r(offs_t offset);
-	void midi_ptm0_c3_w(int state);
 	void midi_latch_w(u8 data);
 
 	// Floppy
@@ -381,10 +379,9 @@ protected:
 
 	required_device<ptm6840_device> m_cmi07_ptm;
 
-	required_device_array<ptm6840_device, 2> m_midi_ptm;
-	required_device_array<acia6850_device, 4> m_midi_acia;
-	required_device_array<midi_port_device, 4> m_midi_out;
-	required_device_array<midi_port_device, 3> m_midi_in;
+	required_device<acia6850_device> m_midi_acia;
+	required_device<midi_port_device> m_midi_out;
+	required_device<midi_port_device> m_midi_in;
 
 	required_memory_region m_qfc9_region;
 	required_device_array<floppy_connector, 2> m_floppy;
@@ -1026,13 +1023,6 @@ u16 cmi_state::midi_dma_r(offs_t offset)
 	return data;
 }
 
-void cmi_state::midi_ptm0_c3_w(int state)
-{
-	m_midi_ptm[1]->set_clock(0, state);
-	m_midi_ptm[1]->set_clock(1, state);
-	m_midi_ptm[1]->set_clock(2, state);
-}
-
 DECLARE_INPUT_CHANGED_MEMBER(cmi_state::tempo_change)
 {
 	external_tempo = m_faders->read();
@@ -1107,13 +1097,7 @@ void cmi_state::midicpu_map(address_map &map)
 {
 	map(0x000000, 0x003fff).rom();
 	map(0x040000, 0x05ffff).rw(FUNC(cmi_state::midi_dma_r), FUNC(cmi_state::midi_dma_w));
-	map(0x060000, 0x06000f).rw(m_midi_ptm[0], FUNC(ptm6840_device::read), FUNC(ptm6840_device::write)).umask16(0xff00);
-	map(0x060010, 0x06001f).rw(m_midi_ptm[1], FUNC(ptm6840_device::read), FUNC(ptm6840_device::write)).umask16(0xff00);
-	map(0x060020, 0x06002f).rw(m_midi_acia[0], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
-	map(0x060030, 0x06003f).rw(m_midi_acia[1], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
-	map(0x060040, 0x06004f).rw(m_midi_acia[2], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
-	map(0x060050, 0x06005f).rw(m_midi_acia[3], FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
-	//map(0x060060, 0x06007f).w(FUNC(cmi_state::smidi_register_w));
+	map(0x060020, 0x06005f).rw(m_midi_acia, FUNC(acia6850_device::read), FUNC(acia6850_device::write)).umask16(0x00ff);
 	map(0x080000, 0x083fff).ram();
 }
 
@@ -1966,13 +1950,6 @@ void cmi_state::machine_reset()
 	m_cmi02_ptm->set_g2(0);
 	m_cmi02_ptm->set_g3(0);
 
-	//m_midi_ptm[0]->set_g1(1); // /G1 has unknown source, "TIMER 1A /GATE" per schematic
-	m_midi_ptm[0]->set_g2(0); // /G2 and /G3 wired to ground per schematic
-	m_midi_ptm[0]->set_g3(0);
-
-	m_midi_ptm[1]->set_g1(0); // /G1, /G2, and /G3 wired to ground per schematic
-	m_midi_ptm[1]->set_g2(0);
-	m_midi_ptm[1]->set_g3(0);
 
 	memset(m_map_sel, 0, 16);
 
@@ -2172,51 +2149,25 @@ void cmi_state::cmi2x(machine_config &config)
 	PTM6840(config, m_cmi07_ptm, 2000000); // ptm_cmi07_config
 	m_cmi07_ptm->irq_callback().set(FUNC(cmi_state::cmi07_irq));
 
-	PTM6840(config, m_midi_ptm[0], 20_MHz_XTAL / 10); //same clock as the MIDI ACIAs
-	m_midi_ptm[0]->set_external_clocks(0, 384000, 0); // C1 is 0, C2 is 384kHz per schematic block diagram, C3 is CLICK SYNC IN
-	//m_midi_ptm[0]->o1_callback().set(FUNC(cmi_state::midi_ptm0_c1_w)); // TIMER 1A O/P per schematic
-	//m_midi_ptm[0]->o2_callback().set(FUNC(cmi_state::midi_ptm0_c2_w)); // CLK 2 per schematic
-	m_midi_ptm[0]->o3_callback().set(FUNC(cmi_state::midi_ptm0_c3_w));
-
-	PTM6840(config, m_midi_ptm[1], 20_MHz_XTAL / 10); // entirely clocked by PTM 0
-	//m_midi_ptm[1]->o1_callback().set(FUNC(cmi_state::midi_sync_out_1_w)); // SYNC OUT 1 per schematic
-	//m_midi_ptm[1]->o2_callback().set(FUNC(cmi_state::midi_sync_out_2_w)); // SYNC OUT 2 per schematic
-	//m_midi_ptm[1]->o3_callback().set(FUNC(cmi_state::midi_sync_out_3_w)); // SYNC OUT 3 per schematic
 
 	clock_device &midi_clock(CLOCK(config, "midi_clock", 20_MHz_XTAL / 10));
-	midi_clock.signal_handler().set(m_midi_acia[0], FUNC(acia6850_device::write_rxc));
-	midi_clock.signal_handler().append(m_midi_acia[0], FUNC(acia6850_device::write_txc));
-	midi_clock.signal_handler().append(m_midi_acia[1], FUNC(acia6850_device::write_rxc));
-	midi_clock.signal_handler().append(m_midi_acia[1], FUNC(acia6850_device::write_txc));
-	midi_clock.signal_handler().append(m_midi_acia[2], FUNC(acia6850_device::write_rxc));
-	midi_clock.signal_handler().append(m_midi_acia[2], FUNC(acia6850_device::write_txc));
-	midi_clock.signal_handler().append(m_midi_acia[3], FUNC(acia6850_device::write_txc));
+	midi_clock.signal_handler().set(m_midi_acia, FUNC(acia6850_device::write_rxc));
+	midi_clock.signal_handler().append(m_midi_acia, FUNC(acia6850_device::write_txc));
 
-	for (int i = 0; i < 4; i++)
-	{
-		ACIA6850(config, m_midi_acia[i]);
-		m_midi_acia[i]->txd_handler().set(m_midi_out[i], FUNC(midi_port_device::write_txd));
+	
+	ACIA6850(config, m_midi_acia);
+	m_midi_acia->txd_handler().set(m_midi_out, FUNC(midi_port_device::write_txd));
 
-		MIDI_PORT(config, m_midi_out[i]);
-		midiout_slot(*m_midi_out[i]);
-	}
+	MIDI_PORT(config, m_midi_out);
+	midiout_slot(*m_midi_out);
 
-	for (int i = 0; i < 3; i++)
-	{
-		MIDI_PORT(config, m_midi_in[i]);
-		midiin_slot(*m_midi_in[i]);
-		m_midi_in[i]->rxd_handler().set(m_midi_acia[i], FUNC(acia6850_device::write_rxd));
-	}
-
-	INPUT_MERGER_ANY_HIGH(config, "midi_ptm_irq").output_handler().set_inputline(m_midicpu, M68K_IRQ_2);
-	m_midi_ptm[0]->irq_callback().set("midi_ptm_irq", FUNC(input_merger_device::in_w<0>));
-	m_midi_ptm[1]->irq_callback().set("midi_ptm_irq", FUNC(input_merger_device::in_w<1>));
+	MIDI_PORT(config, m_midi_in);
+	midiin_slot(*m_midi_in);
+	m_midi_in->rxd_handler().set(m_midi_acia, FUNC(acia6850_device::write_rxd));
+	
 
 	INPUT_MERGER_ANY_HIGH(config, "midi_acia_irq").output_handler().set_inputline(m_midicpu, M68K_IRQ_3);
-	m_midi_acia[0]->irq_handler().set("midi_acia_irq", FUNC(input_merger_device::in_w<0>));
-	m_midi_acia[1]->irq_handler().set("midi_acia_irq", FUNC(input_merger_device::in_w<1>));
-	m_midi_acia[2]->irq_handler().set("midi_acia_irq", FUNC(input_merger_device::in_w<2>));
-	m_midi_acia[3]->irq_handler().set("midi_acia_irq", FUNC(input_merger_device::in_w<3>));
+	m_midi_acia->irq_handler().set("midi_acia_irq", FUNC(input_merger_device::in_w<0>));
 
 	FD1791(config, m_wd1791, 16_MHz_XTAL / 8); // wd1791_interface
 	m_wd1791->intrq_wr_callback().set(FUNC(cmi_state::wd1791_irq));
@@ -2224,7 +2175,7 @@ void cmi_state::cmi2x(machine_config &config)
 	FLOPPY_CONNECTOR(config, m_floppy[0], cmi2x_floppies, "8dsdd", floppy_image_device::default_mfm_floppy_formats);
 	FLOPPY_CONNECTOR(config, m_floppy[1], cmi2x_floppies, "8dsdd", floppy_image_device::default_mfm_floppy_formats);
 
-//Channel Cards
+	//Channel Cards
 
 	SPEAKER(config, "mono").front_center();
 	
