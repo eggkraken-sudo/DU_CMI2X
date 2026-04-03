@@ -193,7 +193,7 @@ public:
 		, m_maincpu2(*this, "maincpu2")
 		, m_midicpu(*this, "smptemidi")
 		, m_cmi07cpu(*this, "cmi07cpu")
-		, m_speaker(*this, "speaker_%u", 0U)
+		, m_speaker(*this, "click")
 		, m_maincpu1_irq_merger(*this, "maincpu1_irq_merger")
 		, m_maincpu2_irq0_merger(*this, "maincpu2_irq0_merger")
 		, m_msm5832(*this, "msm5832")
@@ -358,7 +358,7 @@ protected:
 	required_device<m68000_device> m_midicpu;
 	required_device<mc6809e_device> m_cmi07cpu;
 	
-	required_device_array<speaker_sound_device, 2> m_speaker;
+	required_device<speaker_sound_device> m_speaker;
 
 	required_device<input_merger_any_high_device> m_maincpu1_irq_merger;
 	required_device<input_merger_any_high_device> m_maincpu2_irq0_merger;
@@ -1031,7 +1031,6 @@ DECLARE_INPUT_CHANGED_MEMBER(cmi_state::tempo_change)
 }
 void cmi_state::write_to_click_in(int state)
 {
-	m_speaker[1]->level_w(state);
 	m_cmi02_ptm->set_c2(state);
 }
 
@@ -1493,7 +1492,7 @@ void cmi_state::cmi02_ptm_o1(int state)
 {
 	m_metronome_click_timer->adjust(attotime::never);
 	if (m_click_out != state){ //extra click prevention
-	m_speaker[0]->level_w(state);
+	m_speaker->level_w(state);
 	}
 	m_click_out = state;
 	m_metronome_click_timer->adjust(attotime::from_usec(225));
@@ -1501,7 +1500,7 @@ void cmi_state::cmi02_ptm_o1(int state)
 
 TIMER_CALLBACK_MEMBER(cmi_state::metronome_click)
 {
-	m_speaker[0]->level_w(2);
+	m_speaker->level_w(2);
 	
 	m_metronome_click_timer->adjust(attotime::never);
 }
@@ -2233,17 +2232,13 @@ void cmi_state::cmi2x(machine_config &config)
 	//Click out - needs accuracy verification
 	SPEAKER(config, "click_out").front_center();
 	static const double speaker_levels[3] = {0.2, 0.8, 0.5};
-	SPEAKER_SOUND(config, m_speaker[0]);
-	m_speaker[0]->set_levels(3, speaker_levels);
+	SPEAKER_SOUND(config, m_speaker);
+	m_speaker->set_levels(3, speaker_levels);
 	
 	//todo: sallen-key bandpass filter? what parameters?
 	
-	m_speaker[0]->add_route(0, "click_out", 0.75);
+	m_speaker->add_route(0, "click_out", 0.75);
 	
-	//sound out from fake sync
-	//SPEAKER(config, "fake_sync_out").front_center();
-	SPEAKER_SOUND(config, m_speaker[1]);
-	//m_speaker[1]->add_route(0, "fake_sync_out", 0.1); //this is VERY loud
 }
 
 ROM_START( cmi2x )
