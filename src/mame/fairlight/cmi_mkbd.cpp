@@ -119,35 +119,23 @@ void cmi_music_keyboard_device::cmi10_u20_a_w(u8 data)
 	m_dp2->data_w(data & 0x7f);
 	m_dp3->data_w(data & 0x7f);
 
-	/*
+	
 	int bk = data;
 	int bit = 0;
 
 	if (BIT(bk, 3))
-	    bit = BIT(input_port_read(device->machine, "KEYPAD_A"), bk & 7);
+	    bit = BIT(m_keypad_a_port->read(), bk & 7);
 	else if (!BIT(bk, 4))
-	    bit = BIT(input_port_read(device->machine, "KEYPAD_B"), bk & 7);
+	    bit = BIT(m_keypad_b_port->read(), bk & 7);
 
-	pia6821_cb1_w(m_cmi10_pia_u20, 0, !bit);
-	*/
+	m_cmi10_pia_u20->cb1_w(!bit);
+	
 }
 
 void cmi_music_keyboard_device::cmi10_u20_b_w(u8 data)
 {
 }
 
-int cmi_music_keyboard_device::cmi10_u20_cb1_r()
-{
-	int bk = m_cmi10_pia_u20->a_output();
-	int bit = 0;
-
-	if (BIT(bk, 3))
-		bit = BIT(m_keypad_a_port->read(), bk & 7);
-	else if (!BIT(bk, 4))
-		bit = BIT(m_keypad_b_port->read(), bk & 7);
-
-	return !bit;
-}
 
 void cmi_music_keyboard_device::cmi10_u20_cb2_w(int state)
 {
@@ -394,24 +382,23 @@ void cmi_music_keyboard_device::muskeys_map(address_map &map)
 static INPUT_PORTS_START(cmi_music_keyboard)
 	/* Keypad */
 	PORT_START("KEYPAD_A")
-	PORT_BIT(0x01, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_1_PAD)
-	PORT_BIT(0x02, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_2_PAD)
-	PORT_BIT(0x04, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_3_PAD)
-	PORT_BIT(0x08, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_4_PAD)
-	PORT_BIT(0x10, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_5_PAD)
-	PORT_BIT(0x20, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_6_PAD)
-	PORT_BIT(0x40, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_7_PAD)
-	PORT_BIT(0x80, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_8_PAD)
-
+	PORT_BIT(0x01, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_1_PAD) PORT_NAME("Keypad 3")
+	PORT_BIT(0x02, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_2_PAD) PORT_NAME("Keypad 6")
+	PORT_BIT(0x04, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_3_PAD) PORT_NAME("Keypad #")
+	PORT_BIT(0x08, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_4_PAD) PORT_NAME("Keypad 9")
+	PORT_BIT(0x10, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_5_PAD) PORT_NAME("Keypad A")
+	PORT_BIT(0x20, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_6_PAD) PORT_NAME("Keypad B")
+	PORT_BIT(0x40, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_7_PAD) PORT_NAME("Keypad D")
+	PORT_BIT(0x80, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_8_PAD) PORT_NAME("Keypad C")
 	PORT_START("KEYPAD_B")
-	PORT_BIT(0x01, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_9_PAD)
-	PORT_BIT(0x02, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_0_PAD)
-	PORT_BIT(0x04, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_1_PAD)
-	PORT_BIT(0x08, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_2_PAD)
-	PORT_BIT(0x10, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_3_PAD)
-	PORT_BIT(0x20, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_4_PAD)
-	PORT_BIT(0x40, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_5_PAD)
-	PORT_BIT(0x80, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_6_PAD)
+	PORT_BIT(0x01, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_9_PAD) PORT_NAME("Keypad 1")
+	PORT_BIT(0x02, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_0_PAD) PORT_NAME("Keypad 4")
+	PORT_BIT(0x04, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_1_PAD) PORT_NAME("Keypad *")
+	PORT_BIT(0x08, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_2_PAD) PORT_NAME("Keypad 7")
+	PORT_BIT(0x10, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_3_PAD) PORT_NAME("Keypad 2")
+	PORT_BIT(0x20, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_4_PAD) PORT_NAME("Keypad 5")
+	PORT_BIT(0x40, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_5_PAD) PORT_NAME("Keypad 0")
+	PORT_BIT(0x80, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_6_PAD) PORT_NAME("Keypad 8")
 
 	/* Master musical keyboard */
 	PORT_START("KEY_0_0")
@@ -528,7 +515,7 @@ void cmi_music_keyboard_device::device_add_mconfig(machine_config &config)
 	m_cpu->set_addrmap(AS_PROGRAM, &cmi_music_keyboard_device::muskeys_map);
 
 	PIA6821(config, m_cmi10_pia_u20);
-	m_cmi10_pia_u20->readcb1_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_cb1_r));
+	//m_cmi10_pia_u20->readcb1_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_cb1_r));
 	m_cmi10_pia_u20->writepa_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_a_w));
 	m_cmi10_pia_u20->writepb_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_b_w));
 	m_cmi10_pia_u20->cb2_handler().set(FUNC(cmi_music_keyboard_device::cmi10_u20_cb2_w));
