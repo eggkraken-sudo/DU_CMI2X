@@ -489,8 +489,15 @@ u32 cmi_state::screen_update_cmi2x(screen_device &screen, bitmap_rgb32 &bitmap, 
 {
 	const pen_t *pen = m_palette->pens();
 	u8 y_scroll = m_q219_pia->a_output();
-	u8 invert = BIT(~m_q219_pia->b_output(), 3);
-
+	u8 invert = BIT(~m_q219_pia->b_output(), 3); //cursor invert?
+	
+	/*
+	Video data from the shift register is EXCLUSIVE-ORed with the INVERT signal from
+the PIA at D, E4. With a logic 1 at this pin the picture appears normally with
+set bits in the VRAM displayed as bright pixels. If a logic zero is applied,
+the picture inverted (negative) so that ones in VRAM appear as black pixels
+on a BRIGHT background.  //note: I think the math for this is within the function below, but I don't know why its seemingly not doing anything. Service manual does say that the Q219 card "can" be configured for the cursor to appear, which might mean its optional?.
+	 */
 	for (int y = cliprect.min_y; y <= cliprect.max_y; ++y)
 	{
 		u8 *src = &m_video_ram[(512/8) * ((y + y_scroll) & 0xff)];
@@ -510,8 +517,16 @@ u32 cmi_state::screen_update_cmi2x(screen_device &screen, bitmap_rgb32 &bitmap, 
 	//if (LPCEN && NOT_TOUCHING)
 	if (m_lp_touch_port->read() && BIT(m_q219_pia->b_output(), 1))
 	{
-		/* Invert target pixel */
-		bitmap.pix(m_lp_y_port->read(), m_lp_x_port->read()) ^= 0x00ffffff;
+		/* Invert target pixels */
+		for (int i = 0; i < 10; ++i){
+			bitmap.pix(m_lp_y_port->read(), m_lp_x_port->read()+i) ^= 0x00ffffff;
+		}
+		for (int i = 0; i < 7; ++i){
+			bitmap.pix(m_lp_y_port->read()+1, m_lp_x_port->read()+i+4) ^= 0x00ffffff;  //faux cursor - best match I could get from referencing footage - it is quite hard to get a clear example since most people are right handed and it only appears when the pen tip is quite close to the screen
+		}
+		for (int i = 0; i < 7; ++i){
+			bitmap.pix(m_lp_y_port->read()-1, m_lp_x_port->read()+i+4) ^= 0x00ffffff;
+		}
 	}
 
 
