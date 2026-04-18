@@ -269,6 +269,7 @@ public:
 	u32 external_tempo = 120;
 	
 	DECLARE_INPUT_CHANGED_MEMBER(tempo_change);
+	//DECLARE_INPUT_CHANGED_MEMBER(hit_switch);
 
 	// Video-related
 	u8 video_r(offs_t offset);
@@ -455,6 +456,7 @@ private:
 	u16  m_lp_x = 0;
 	u8   m_lp_y = 0;
 	u8   m_q219_b_touch = 0;
+	bool m_lp_hit = true;
 
 	/* QFC9 floppy disk controller card */
 	u8 * m_qfc9_region_ptr = 0;
@@ -509,24 +511,24 @@ on a BRIGHT background.  //note: I think the math for this is within the functio
 
 			/* Store 8 pixels */
 			for (int i = 0; i < 8; ++i)
-				*dest++ = pen[BIT(data, 7 - i) ^ invert];
+				*dest++ = pen[(BIT(data, 7 - i) ^ invert)];
 		}
 	}
 
 	/* Get lightpen position */
 	//if (LPCEN && NOT_TOUCHING)
-	if (m_lp_touch_port->read() && BIT(m_q219_pia->b_output(), 1))
+	if (m_lp_touch_port->read() && m_lp_hit)
 	{
-		/* Invert target pixels */
-		for (int i = 0; i < 10; ++i){
-			bitmap.pix(m_lp_y_port->read(), m_lp_x_port->read()+i) ^= 0x00ffffff;
+		//invert target pixel
+		bitmap.pix(m_lp_y_port->read(), m_lp_x_port->read()) ^= 0x00ffffff;
+		/*int x = m_lp_x_port->read();
+		int y = m_lp_y_port->read();
+		for (int i = 0; i < 5; ++i){
+			bitmap.pix(y - 2 + i, x) ^= 0x00ffffff;
 		}
 		for (int i = 0; i < 7; ++i){
-			bitmap.pix(m_lp_y_port->read()+1, m_lp_x_port->read()+i+4) ^= 0x00ffffff;  //faux cursor - best match I could get from referencing footage - it is quite hard to get a clear example since most people are right handed and it only appears when the pen tip is quite close to the screen
-		}
-		for (int i = 0; i < 7; ++i){
-			bitmap.pix(m_lp_y_port->read()-1, m_lp_x_port->read()+i+4) ^= 0x00ffffff;
-		}
+			bitmap.pix(y, x - 3 + i) ^= 0x00ffffff;
+		}*/
 	}
 
 
@@ -548,7 +550,7 @@ TIMER_CALLBACK_MEMBER(cmi_state::hblank)
 			m_q219_b_touch = _touch ? 0 : (1 << 5);
 			m_q219_pia->ca1_w(_touch ? 0 : 1);
 
-			if (!_touch || !_tfh)
+			if ((!_touch && m_lp_hit) || !_tfh)
 			{
 				/* Latch the counters */
 				m_lp_x = m_lp_x_port->read();
@@ -1044,6 +1046,11 @@ DECLARE_INPUT_CHANGED_MEMBER(cmi_state::tempo_change)
 	external_tempo = external_tempo*6.4;
 	m_clock->set_unscaled_clock(external_tempo);
 }
+
+/*DECLARE_INPUT_CHANGED_MEMBER(cmi_state::hit_switch)
+{
+	m_lp_hit = !m_lp_hit;
+}*/
 void cmi_state::write_to_click_in(int state)
 {
 	m_cmi02_ptm->set_c2(state);
@@ -1169,6 +1176,10 @@ static INPUT_PORTS_START( cmi2x )
 
 	PORT_START("LP_TOUCH")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_NAME ( "Lightpen Touch" ) PORT_CODE( MOUSECODE_BUTTON1 )
+	/*PORT_START("LP_HIT_TOGGLE")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME ( "Lightpen Hit Toggle" ) PORT_CODE( MOUSECODE_BUTTON2 ) PORT_TOGGLE
+		PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_state::hit_switch),0)*/
+	
 	PORT_START("tempo_in")
 	PORT_ADJUSTER(120, "External Tempo") PORT_MINMAX(15,255) //should go up to 781 but it wraps around and I don't know why + this is temporary anyways
 		PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_state::tempo_change),0)
@@ -1983,6 +1994,9 @@ void cmi_state::machine_start()
 
 	m_click_out.resolve();
 	
+	m_lp_hit = true;
+	
+	
 	// allocate timers for the built-in two channel timer
 	m_map_switch_timer = timer_alloc(FUNC(cmi_state::switch_map), this);
 	m_hblank_timer = timer_alloc(FUNC(cmi_state::hblank), this);
@@ -2278,6 +2292,8 @@ ROM_START( cmi2x )
 	/* QFC9 Floppy disk controller driver */
 	ROM_REGION( 0x800, "qfc9", 0 )
 	ROM_LOAD( "dqfc911.bin", 0x00, 0x800, CRC(5bc38db2) SHA1(bd840e19e51a336e669c40b9e18cdaf6b3c62a8a) )
+	
+	//if EMPTY SLOT option is chosen before swapping disks page 2 automatically updates with new disk contents. Disk copying still nonfunctional with this method (never detects that system disk has been replaced).
 
 	// All of these PROM dumps have been trimmed to size from within a roughly 2x-bigger file.
 	// The actual sizes are known from the schematics and the starting address of the actual PROM data was obvious
