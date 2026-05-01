@@ -222,7 +222,7 @@ public:
 		, m_lp_x_port(*this, "LP_X")
 		, m_lp_y_port(*this, "LP_Y")
 		, m_lp_touch_port(*this, "LP_TOUCH")
-		, m_faders(*this, "tempo_in")
+		//, m_faders(*this, "tempo_in")
 		, m_cmi07_ram(*this, "cmi07_ram")
 		, m_cpu_periphs(*this, "cpu%u_periphs", 1U)
 		, m_click_out(*this, "click_out")
@@ -270,7 +270,7 @@ public:
 	//void write_to_click_in(int state);
 	//u32 external_tempo = 120;
 	
-	DECLARE_INPUT_CHANGED_MEMBER(tempo_change);
+	//DECLARE_INPUT_CHANGED_MEMBER(tempo_change);
 	//DECLARE_INPUT_CHANGED_MEMBER(hit_switch);
 
 	// Video-related
@@ -400,7 +400,7 @@ protected:
 	required_ioport m_lp_y_port;
 	required_ioport m_lp_touch_port;
 	
-	required_ioport m_faders;
+	//required_ioport m_faders;
 
 	required_shared_ptr<u8> m_cmi07_ram;
 
