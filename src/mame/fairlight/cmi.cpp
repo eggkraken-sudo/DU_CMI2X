@@ -76,6 +76,8 @@
 
 ****************************************************************************/
 
+
+
 #include "emu.h"
 
 #include "cmi01a.h"
@@ -202,7 +204,7 @@ public:
 		, m_q133_ptm(*this, "q133_ptm")
 		, m_q133_acia(*this, "q133_acia_%u", 0U)
 		, m_q133_region(*this, "q133")
-		, m_clock(*this, "fake_clock")
+		//, m_clock(*this, "fake_clock")
 		, m_q219_pia(*this, "q219_pia")
 		, m_q219_ptm(*this, "q219_ptm")
 		, m_cmi02_pia(*this, "cmi02_pia_%u", 1U)
@@ -265,8 +267,8 @@ public:
 	u8 vfetch1_r(offs_t offset);
 	u8 vfetch2_r(offs_t offset);
 	
-	void write_to_click_in(int state);
-	u32 external_tempo = 120;
+	//void write_to_click_in(int state);
+	//u32 external_tempo = 120;
 	
 	DECLARE_INPUT_CHANGED_MEMBER(tempo_change);
 	//DECLARE_INPUT_CHANGED_MEMBER(hit_switch);
@@ -354,6 +356,7 @@ public:
 	template <int CpuNum> void cpu_periphs_map(address_map &map) ATTR_COLD;
 
 protected:
+	
 	required_device<mc6809e_device> m_maincpu1;
 	required_device<mc6809e_device> m_maincpu2;
 	required_device<m68000_device> m_midicpu;
@@ -370,7 +373,7 @@ protected:
 	required_device_array<mos6551_device, 4> m_q133_acia;
 	required_memory_region m_q133_region;
 
-	required_device<clock_device> m_clock;
+	//required_device<clock_device> m_clock;
 	
 	required_device<pia6821_device> m_q219_pia;
 	required_device<ptm6840_device> m_q219_ptm;
@@ -411,6 +414,7 @@ private:
 	emu_timer *m_hblank_timer = nullptr;
 	emu_timer *m_jam_timeout_timer = nullptr;
 	emu_timer *m_metronome_click_timer = nullptr;
+	
 	
 	output_finder<> m_click_out;
 
@@ -1040,21 +1044,21 @@ u16 cmi_state::midi_dma_r(offs_t offset)
 	return data;
 }
 
-DECLARE_INPUT_CHANGED_MEMBER(cmi_state::tempo_change)
+/*DECLARE_INPUT_CHANGED_MEMBER(cmi_state::tempo_change)
 {
 	external_tempo = m_faders->read();
 	external_tempo = external_tempo*6.4;
 	m_clock->set_unscaled_clock(external_tempo);
-}
+}*/
 
 /*DECLARE_INPUT_CHANGED_MEMBER(cmi_state::hit_switch)
 {
 	m_lp_hit = !m_lp_hit;
 }*/
-void cmi_state::write_to_click_in(int state)
+/*void cmi_state::write_to_click_in(int state)
 {
 	m_cmi02_ptm->set_c2(state);
-}
+}*/
 
 void cmi_state::midi_latch_w(u8 data)
 {
@@ -1180,9 +1184,9 @@ static INPUT_PORTS_START( cmi2x )
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME ( "Lightpen Hit Toggle" ) PORT_CODE( MOUSECODE_BUTTON2 ) PORT_TOGGLE
 		PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_state::hit_switch),0)*/
 	
-	PORT_START("tempo_in")
+	/*PORT_START("tempo_in")
 	PORT_ADJUSTER(120, "External Tempo") PORT_MINMAX(15,255) //should go up to 781 but it wraps around and I don't know why + this is temporary anyways
-		PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_state::tempo_change),0)
+		PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_state::tempo_change),0)*/
 INPUT_PORTS_END
 
 template <int CpuNum> u8 cmi_state::scratch_ram_r(offs_t offset)
@@ -1541,6 +1545,7 @@ void cmi_state::cmi02_pia2_cb2_w(int state)
 	LOG("%s: cmi02_pia2_cb2_w: %d\n", machine().describe_context(), state);
 	m_cmi02_pia[1]->ca1_w(1);
 	m_cmi02_pia[1]->ca1_w(0);
+	
 }
 
 u8 cmi_state::cmi02_r(offs_t offset)
@@ -2146,9 +2151,10 @@ void cmi_state::cmi2x(machine_config &config)
 	clock_device &q133_acia_clock(CLOCK(config, "q133_acia_clock", 1.8432_MHz_XTAL / 12));
 	q133_acia_clock.signal_handler().set(FUNC(cmi_state::q133_acia_clock));
 	
-	clock_device &fake_sync(CLOCK(config, "fake_clock", 120*6.4)); //sync speed in hz at lowest resolution (SYNC:EXT)
-	fake_sync.signal_handler().set(FUNC(cmi_state::write_to_click_in)); //temp
+	/*clock_device &fake_sync(CLOCK(config, "fake_clock", 120*6.4)); //sync speed in hz at lowest resolution (SYNC:EXT)
+	fake_sync.signal_handler().set(FUNC(cmi_state::write_to_click_in)); //temp*/
 
+	
 	for (auto &acia : m_q133_acia)
 		MOS6551(config, acia, 1.8432_MHz_XTAL).set_xtal(1.8432_MHz_XTAL);
 
@@ -2214,7 +2220,6 @@ void cmi_state::cmi2x(machine_config &config)
 
 	CMI01A_CHANNEL_CARD(config, m_channels[0], SYSTEM_CAS_CLOCK, 0);
 	m_channels[0]->irq_callback().set(FUNC(cmi_state::channel_irq<0>));
-
 	CMI01A_CHANNEL_CARD(config, m_channels[1], SYSTEM_CAS_CLOCK, 1);;
 	m_channels[1]->irq_callback().set(FUNC(cmi_state::channel_irq<1>));
 	
@@ -2293,7 +2298,9 @@ ROM_START( cmi2x )
 	ROM_REGION( 0x800, "qfc9", 0 )
 	ROM_LOAD( "dqfc911.bin", 0x00, 0x800, CRC(5bc38db2) SHA1(bd840e19e51a336e669c40b9e18cdaf6b3c62a8a) )
 	
-	//if EMPTY SLOT option is chosen before swapping disks page 2 automatically updates with new disk contents. Disk copying still nonfunctional with this method (never detects that system disk has been replaced).
+	//NOTE: if EMPTY SLOT option is chosen before swapping disks page 2 automatically updates with new disk contents. Disk copying still nonfunctional with this method (never detects that system disk has been replaced).
+	
+	
 
 	// All of these PROM dumps have been trimmed to size from within a roughly 2x-bigger file.
 	// The actual sizes are known from the schematics and the starting address of the actual PROM data was obvious
