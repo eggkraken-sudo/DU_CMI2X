@@ -30,9 +30,9 @@ public:
 	void kbd_rxd_w(int state);
 	void kbd_cts_w(int state);
 
-	DECLARE_INPUT_CHANGED_MEMBER(key_changed);
+	//DECLARE_INPUT_CHANGED_MEMBER(key_changed);
 
-	enum : u32
+	/*enum : u32
 	{
 		KEY_F1,
 		KEY_F1S,
@@ -109,7 +109,7 @@ public:
 		KEY_F7,
 
 		KEY_COUNT
-	};
+	}; */
 
 protected:
 	virtual const tiny_rom_entry *device_rom_region() const override ATTR_COLD;
@@ -162,15 +162,15 @@ private:
 
 	required_ioport m_keypad_a_port;
 	required_ioport m_keypad_b_port;
-	required_ioport m_analog;
+	//required_ioport m_analog;
 
-	required_ioport_array<3> m_key_mux_ports[4];
+	//required_ioport_array<3> m_key_mux_ports[4];
 
 	output_finder<12> m_digit;
 
 	emu_timer *m_cmi10_scnd_timer;
-	emu_timer *m_velocity_timers[KEY_COUNT];
-	bool m_key_held[KEY_COUNT];
+	//emu_timer *m_velocity_timers[KEY_COUNT];
+	//bool m_key_held[KEY_COUNT];
 
 	int     m_kbd_acia_irq;
 	int     m_cmi_acia_irq;

@@ -194,7 +194,7 @@ public:
 		, m_maincpu1(*this, "maincpu1")
 		, m_maincpu2(*this, "maincpu2")
 		, m_midicpu(*this, "smptemidi")
-		, m_cmi07cpu(*this, "cmi07cpu")
+		//, m_cmi07cpu(*this, "cmi07cpu")
 		, m_speaker(*this, "click")
 		, m_maincpu1_irq_merger(*this, "maincpu1_irq_merger")
 		, m_maincpu2_irq0_merger(*this, "maincpu2_irq0_merger")
@@ -209,7 +209,7 @@ public:
 		, m_q219_ptm(*this, "q219_ptm")
 		, m_cmi02_pia(*this, "cmi02_pia_%u", 1U)
 		, m_cmi02_ptm(*this, "cmi02_ptm")
-		, m_cmi07_ptm(*this, "cmi07_ptm")
+		//, m_cmi07_ptm(*this, "cmi07_ptm")
 		, m_midi_acia(*this, "midi_acia")
 		, m_midi_out(*this, "midi_out")
 		, m_midi_in(*this, "midi_in")
@@ -223,7 +223,7 @@ public:
 		, m_lp_y_port(*this, "LP_Y")
 		, m_lp_touch_port(*this, "LP_TOUCH")
 		//, m_faders(*this, "tempo_in")
-		, m_cmi07_ram(*this, "cmi07_ram")
+		//, m_cmi07_ram(*this, "cmi07_ram")
 		, m_cpu_periphs(*this, "cpu%u_periphs", 1U)
 		, m_click_out(*this, "click_out")
 	{
@@ -338,17 +338,17 @@ public:
 	void cmi02_pia2_irqa_w(int state);
 	void cmi02_pia2_cb2_w(int state);
 
-	u8 cmi07_r();
-	void cmi07_w(u8 data);
+	//u8 cmi07_r();
+	//void cmi07_w(u8 data);
 
 	void msm5832_irq_w(int state);
-	void cmi07_irq(int state);
+	//void cmi07_irq(int state);
 	void q133_acia_clock(int state);
 
 	template<int Channel> void channel_irq(int state);
 
 	void cmi2x(machine_config &config);
-	void cmi07cpu_map(address_map &map) ATTR_COLD;
+	//void cmi07cpu_map(address_map &map) ATTR_COLD;
 	void maincpu1_map(address_map &map) ATTR_COLD;
 	void maincpu2_map(address_map &map) ATTR_COLD;
 	void midicpu_map(address_map &map) ATTR_COLD;
@@ -360,7 +360,7 @@ protected:
 	required_device<mc6809e_device> m_maincpu1;
 	required_device<mc6809e_device> m_maincpu2;
 	required_device<m68000_device> m_midicpu;
-	required_device<mc6809e_device> m_cmi07cpu;
+	//required_device<mc6809e_device> m_cmi07cpu;
 	
 	required_device<speaker_sound_device> m_speaker;
 
@@ -381,7 +381,7 @@ protected:
 	required_device_array<pia6821_device, 2> m_cmi02_pia;
 	required_device<ptm6840_device> m_cmi02_ptm;
 
-	required_device<ptm6840_device> m_cmi07_ptm;
+	//required_device<ptm6840_device> m_cmi07_ptm;
 
 	required_device<acia6850_device> m_midi_acia;
 	required_device<midi_port_device> m_midi_out;
@@ -402,7 +402,7 @@ protected:
 	
 	//required_ioport m_faders;
 
-	required_shared_ptr<u8> m_cmi07_ram;
+	//required_shared_ptr<u8> m_cmi07_ram;
 
 	required_device_array<address_map_bank_device, 2> m_cpu_periphs;
 
@@ -472,9 +472,9 @@ private:
 	PAIR      m_fdc_dma_cnt{};
 
 	/* CMI-07 */
-	u8   m_cmi07_ctrl = 0;
-	bool      m_cmi07_base_enable[2]{};
-	u16  m_cmi07_base_addr = 0;
+	//u8   m_cmi07_ctrl = 0;
+	//bool      m_cmi07_base_enable[2]{};
+	//u16  m_cmi07_base_addr = 0;
 
 	u8   m_msm5832_addr = 0;
 
@@ -746,10 +746,10 @@ template <int CpuNum, u16 base> u8 cmi_state::ram_range_r(offs_t offset)
 	const u8 page = addr >> 11;
 	const u8 page_info = m_map_ram[0][((mapinfo & 0x1f) << PAGE_SHIFT) + page];
 
-	if (m_cmi07_base_enable[CpuNum] && (addr & 0xc000) == m_cmi07_base_addr)
+	/*if (m_cmi07_base_enable[CpuNum] && (addr & 0xc000) == m_cmi07_base_addr)
 	{
 		return m_cmi07_ram[(page * PAGE_SIZE) & 0x3fff];
-	}
+	}*/
 
 	if (perr_en)
 	{
@@ -772,11 +772,11 @@ template <int CpuNum, u16 base> void cmi_state::ram_range_w(offs_t offset, u8 da
 	const u8 page = addr >> 11;
 	const u8 page_info = m_map_ram[0][((mapinfo & 0x1f) << PAGE_SHIFT) + page];
 
-	if (m_cmi07_base_enable[CpuNum] && (addr & 0xc000) == m_cmi07_base_addr)
+	/*if (m_cmi07_base_enable[CpuNum] && (addr & 0xc000) == m_cmi07_base_addr)
 	{
 		m_cmi07_ram[(page * PAGE_SIZE) & 0x3fff] = data;
 		return;
-	}
+	}*/
 
 	if (perr_en)
 	{
@@ -798,14 +798,14 @@ template <int CpuNum> u8 cmi_state::vram_range_r(offs_t offset)
 	}
 	else
 	{
-		const u16 address = 0x8000 + offset;
+		//const u16 address = 0x8000 + offset;
 		const u8 page = (offset >> 11) + 16;
 		const u8 page_info = m_map_ram[0][((mapinfo & 0x1f) << PAGE_SHIFT) + page];
 
-		if (m_cmi07_base_enable[CpuNum] && (address & 0xc000) == m_cmi07_base_addr)
+		/*if (m_cmi07_base_enable[CpuNum] && (address & 0xc000) == m_cmi07_base_addr)
 		{
 			return m_cmi07_ram[(page * PAGE_SIZE) & 0x3fff];
-		}
+		}*/
 
 		if (BIT(page_info, 7))
 		{
@@ -826,15 +826,15 @@ template <int CpuNum> void cmi_state::vram_range_w(offs_t offset, u8 data)
 	}
 	else
 	{
-		const u16 address = 0x8000 + offset;
+		//const u16 address = 0x8000 + offset;
 		const u8 page = (offset >> 11) + 16;
 		const u8 page_info = m_map_ram[0][((mapinfo & 0x1f) << PAGE_SHIFT) + page];
 
-		if (m_cmi07_base_enable[CpuNum] && (address & 0xc000) == m_cmi07_base_addr)
+		/*if (m_cmi07_base_enable[CpuNum] && (address & 0xc000) == m_cmi07_base_addr)
 		{
 			m_cmi07_ram[(page * PAGE_SIZE) & 0x3fff] = data;
 			return;
-		}
+		}*/
 
 		if (BIT(page_info, 7))
 		{
@@ -1126,7 +1126,7 @@ void cmi_state::midicpu_map(address_map &map)
 	map(0x080000, 0x083fff).ram();
 }
 
-void cmi_state::cmi07cpu_map(address_map &map)
+/*void cmi_state::cmi07cpu_map(address_map &map)
 {
 	map(0x0000, 0x0000).r(FUNC(cmi_state::aic_ad574_r)).mirror(0x3fff);
 	map(0x4000, 0x4000).w(FUNC(cmi_state::aic_dac_w<0>)).mirror(0x3ff8);
@@ -1138,7 +1138,7 @@ void cmi_state::cmi07cpu_map(address_map &map)
 	map(0x4007, 0x4007).w(FUNC(cmi_state::aic_ad565_lsb_w)).mirror(0x3ff8);
 	map(0x8000, 0x8fff).rw(m_cmi07_ptm, FUNC(ptm6840_device::read), FUNC(ptm6840_device::write));
 	map(0xc000, 0xffff).ram().share("cmi07_ram");
-}
+}*/
 
 template <int CpuNum> void cmi_state::cpu_periphs_map(address_map &map)
 {
@@ -1155,7 +1155,7 @@ template <int CpuNum> void cmi_state::cpu_periphs_map(address_map &map)
 	map(0x0c8c, 0x0c8f).rw(m_q133_acia[3], FUNC(mos6551_device::read), FUNC(mos6551_device::write));
 	map(0x0c90, 0x0c97).rw(m_q133_ptm, FUNC(ptm6840_device::read), FUNC(ptm6840_device::write));
 	map(0x0ca0, 0x0ca0).w(FUNC(cmi_state::midi_latch_w));
-	map(0x0cbc, 0x0cbc).rw(FUNC(cmi_state::cmi07_r), FUNC(cmi_state::cmi07_w));
+	//map(0x0cbc, 0x0cbc).rw(FUNC(cmi_state::cmi07_r), FUNC(cmi_state::cmi07_w));
 	map(0x0cc0, 0x0cc3).r(FUNC(cmi_state::lightpen_r));
 	map(0x0cc4, 0x0cc7).rw(m_q219_pia, FUNC(pia6821_device::read), FUNC(pia6821_device::write));
 	map(0x0cc8, 0x0ccf).rw(m_q219_ptm, FUNC(ptm6840_device::read), FUNC(ptm6840_device::write));
@@ -1224,7 +1224,7 @@ void cmi_state::update_address_space(int cpunum, u8 mapinfo)
 	m_curr_mapinfo[cpunum] = mapinfo;
 }
 
-void cmi_state::cmi07_w(u8 data)
+/*void cmi_state::cmi07_w(u8 data)
 {
 	LOG("%s: cmi07_w: %02x\n", machine().describe_context(), data);
 
@@ -1245,11 +1245,11 @@ void cmi_state::cmi07_w(u8 data)
 	m_cmi07cpu->set_input_line(INPUT_LINE_NMI,   BIT(data, 2) ? CLEAR_LINE : ASSERT_LINE);
 	m_cmi07cpu->set_input_line(INPUT_LINE_HALT,  BIT(data, 3) ? CLEAR_LINE : ASSERT_LINE);
 
-	/* We need to update the address spaces */
+	// We need to update the address spaces
 	u8 map_info = (m_cpu_active_space[0] == MAPPING_A) ? m_map_sel[MAPSEL_P1_A] : m_map_sel[MAPSEL_P1_B];
 	update_address_space(0, map_info);
 
-	/* CPU 2 space is untouched by this update */
+	//CPU 2 space is untouched by this update
 	if (BIT(prev & data, 7))
 		return;
 
@@ -1261,7 +1261,7 @@ u8 cmi_state::cmi07_r()
 {
 	LOG("%s: cmi07_r: %02x\n", machine().describe_context(), 0xff);
 	return 0xff;
-}
+} */
 
 void cmi_state::q133_acia_irq(int state)
 {
@@ -1399,12 +1399,12 @@ void cmi_state::fdc_dma_transfer()
 		if (m_fdc_dma_cnt.w.l == 0xffff)
 			return;
 
-		if (m_cmi07_ctrl & 0x30)
+		/*if (m_cmi07_ctrl & 0x30)
 			if (BIT(m_cmi07_ctrl, 6) && !BIT(m_cmi07_ctrl, 7))
 			{
 				if ((m_fdc_dma_addr.w.l & 0xc000) == ((m_cmi07_ctrl & 0x30) << 10))
 					m_cmi07_ram[m_fdc_dma_addr.w.l & 0x3fff] = data;
-			}
+			} */
 
 		if (phys_page & 0x80)
 			m_q256_ram[i][((phys_page & 0x7f) * PAGE_SIZE) + (m_fdc_dma_addr.w.l & PAGE_MASK)] = data;
@@ -1930,10 +1930,10 @@ void cmi_state::msm5832_irq_w(int state)
 	set_interrupt(CPU_2, IRQ_RTCINT_LEVEL, state ? ASSERT_LINE : CLEAR_LINE);
 }
 
-void cmi_state::cmi07_irq(int state)
+/*void cmi_state::cmi07_irq(int state)
 {
 	m_cmi07cpu->set_input_line(INPUT_LINE_IRQ0, state ? ASSERT_LINE : CLEAR_LINE);
-}
+}*/
 
 void cmi_state::machine_reset()
 {
@@ -1964,12 +1964,12 @@ void cmi_state::machine_reset()
 	// TODO - we need to detect empty disk drive!!
 	m_fdc_status |= FDC_STATUS_READY;
 
-	/* CMI-07 */
+	/* //CMI-07
 	m_cmi07_ctrl = 0;
 	m_cmi07_base_enable[0] = false;
 	m_cmi07_base_enable[1] = false;
 	m_cmi07_base_addr = 0;
-	m_cmi07cpu->set_input_line(INPUT_LINE_RESET, ASSERT_LINE);
+	m_cmi07cpu->set_input_line(INPUT_LINE_RESET, ASSERT_LINE); */
 
 	// SMIDI
 	m_midicpu->set_input_line(INPUT_LINE_HALT, ASSERT_LINE);
@@ -2037,11 +2037,11 @@ void cmi_state::cmi_iix_vblank(int state)
 {
 	if (state)
 	{
-		/* VSYNC */
+		//VSYNC
 		m_q219_pia->cb2_w(1);
 		m_q219_pia->cb2_w(0);
 
-		/* LPSTB */
+		//LPSTB
 		m_q219_pia->cb1_w(0);
 	}
 }
@@ -2081,8 +2081,8 @@ void cmi_state::cmi2x(machine_config &config)
 	M68000(config, m_midicpu, 20_MHz_XTAL / 2);
 	m_midicpu->set_addrmap(AS_PROGRAM, &cmi_state::midicpu_map);
 
-	MC6809E(config, m_cmi07cpu, Q209_CPU_CLOCK);
-	m_cmi07cpu->set_addrmap(AS_PROGRAM, &cmi_state::cmi07cpu_map);
+	//MC6809E(config, m_cmi07cpu, Q209_CPU_CLOCK);
+	//m_cmi07cpu->set_addrmap(AS_PROGRAM, &cmi_state::cmi07cpu_map);
 
 	/* video hardware */
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER, rgb_t::green());
@@ -2180,8 +2180,8 @@ void cmi_state::cmi2x(machine_config &config)
 	alphakeys.txd_handler().set("mkbd", FUNC(cmi_music_keyboard_device::kbd_rxd_w));
 	alphakeys.rts_handler().set("mkbd", FUNC(cmi_music_keyboard_device::kbd_cts_w));
 
-	PTM6840(config, m_cmi07_ptm, 2000000); // ptm_cmi07_config
-	m_cmi07_ptm->irq_callback().set(FUNC(cmi_state::cmi07_irq));
+	//PTM6840(config, m_cmi07_ptm, 2000000); // ptm_cmi07_config
+	//m_cmi07_ptm->irq_callback().set(FUNC(cmi_state::cmi07_irq));
 
 
 	clock_device &midi_clock(CLOCK(config, "midi_clock", 20_MHz_XTAL / 10));
@@ -2314,7 +2314,7 @@ ROM_START( cmi2x )
 	ROM_LOAD( "wrom.bin",   0x400, 0x020, CRC(68a9e17f) SHA1(c3364a37a8d19a1882d7910add1c1df9b63ee32c) ) // Unknown use, lightgun/graphics card
 ROM_END
 
-/* TODO: Machine start? */
+//TODO: Machine start?
 void cmi_state::init_cmi2x()
 {
 }

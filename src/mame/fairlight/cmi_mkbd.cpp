@@ -59,8 +59,8 @@ cmi_music_keyboard_device::cmi_music_keyboard_device(const machine_config &mconf
 	, m_dp3(*this, "dp3")
 	, m_keypad_a_port(*this, "KEYPAD_A")
 	, m_keypad_b_port(*this, "KEYPAD_B")
-	, m_analog(*this, "ANALOG")
-	, m_key_mux_ports{ { *this, "KEY_%u_0", 0 }, { *this, "KEY_%u_1", 0 }, { *this, "KEY_%u_2", 0 }, { *this, "KEY_%u_3", 0 } }
+	//, m_analog(*this, "ANALOG")
+	//, m_key_mux_ports{ { *this, "KEY_%u_0", 0 }, { *this, "KEY_%u_1", 0 }, { *this, "KEY_%u_2", 0 }, { *this, "KEY_%u_3", 0 } }
 	, m_digit(*this, "digit%u", 0U)
 {
 }
@@ -77,11 +77,11 @@ void cmi_music_keyboard_device::device_start()
 
 	m_scnd = 0;
 
-	for (u32 i = 0; i < KEY_COUNT; i++)
+	/*for (u32 i = 0; i < KEY_COUNT; i++)
 	{
 		m_velocity_timers[i] = timer_alloc(FUNC(cmi_music_keyboard_device::velkey_down), this);
 		m_key_held[i] = false;
-	}
+	}*/
 }
 
 TIMER_CALLBACK_MEMBER(cmi_music_keyboard_device::scnd_update)
@@ -91,10 +91,10 @@ TIMER_CALLBACK_MEMBER(cmi_music_keyboard_device::scnd_update)
 	m_cmi10_pia_u21->ca1_w(m_scnd);
 }
 
-TIMER_CALLBACK_MEMBER(cmi_music_keyboard_device::velkey_down)
+/*TIMER_CALLBACK_MEMBER(cmi_music_keyboard_device::velkey_down)
 {
 	m_key_held[param] = true;
-}
+}*/
 
 /*
     PA0-7 = BKA0-7 (display)
@@ -177,7 +177,7 @@ void cmi_music_keyboard_device::cmi10_u21_cb2_w(int state)
 //  state = state;
 }
 
-u32 cmi_music_keyboard_device::get_key_for_indices(int mux, int module, int key)
+/*u32 cmi_music_keyboard_device::get_key_for_indices(int mux, int module, int key)
 {
 	if (mux == 3)
 	{
@@ -188,10 +188,11 @@ u32 cmi_music_keyboard_device::get_key_for_indices(int mux, int module, int key)
 		return KEY_COUNT;
 	}
 	return KEY_F1 + (module * 24) + (mux * 8) + key;
-}
+}*/
 
 u8 cmi_music_keyboard_device::cmi10_u21_a_r()
 {
+/*
 #if 0
 //  int thld = m_cmi10_pia_u21->ca2_output();
 	int sel = m_cmi10_pia_u20->a_output();
@@ -210,10 +211,10 @@ u8 cmi_music_keyboard_device::cmi10_u21_a_r()
 		{
 			keyval = m_analog->read();
 
-			/* Unpressed */
+			// Unpressed
 			if (keyval <= 0)
 				state = 1;
-			/* In flight */
+			// In flight
 
 	#if 0
 			else if (keyval <= 80)
@@ -223,7 +224,7 @@ u8 cmi_music_keyboard_device::cmi10_u21_a_r()
 				else
 					state = 1;
 			}
-			/* Fully depressed */
+			//Fully depressed
 	#endif
 			else
 				state = 0;
@@ -234,14 +235,14 @@ u8 cmi_music_keyboard_device::cmi10_u21_a_r()
 	}
 
 	return data;
-#else
-	int thld = m_cmi10_pia_u21->ca2_output();
+#else */
+	//int thld = m_cmi10_pia_u21->ca2_output();
 	int sel = m_cmi10_pia_u20->a_output();
-	int key = sel & 7;
-	int mux = (sel >> 3) & 3;
+	/*int key = sel & 7;
+	int mux = (sel >> 3) & 3;*/
 	u8 data = 0xff; // slave keyboard not used
 
-	for (int module = 0; module < 3; ++module)
+	/*for (int module = 0; module < 3; ++module)
 	{
 		u8 keyval = m_key_mux_ports[mux][module]->read();
 		u32 keyidx = get_key_for_indices(mux, module, key);
@@ -267,7 +268,7 @@ u8 cmi_music_keyboard_device::cmi10_u21_a_r()
 			}
 		}
 	}
-
+*/
 	/* Now do KD7 */
 	{
 		int bit = 0;
@@ -281,7 +282,7 @@ u8 cmi_music_keyboard_device::cmi10_u21_a_r()
 	}
 
 	return ~data;
-#endif
+//#endif
 }
 
 void cmi_music_keyboard_device::kbd_acia_int(int state)
@@ -357,7 +358,7 @@ u8 cmi_music_keyboard_device::kbd_acia_r(offs_t offset)
 	return data;
 }
 
-INPUT_CHANGED_MEMBER(cmi_music_keyboard_device::key_changed)
+/*INPUT_CHANGED_MEMBER(cmi_music_keyboard_device::key_changed)
 {
 	if (newval)
 	{
@@ -365,7 +366,7 @@ INPUT_CHANGED_MEMBER(cmi_music_keyboard_device::key_changed)
 		m_velocity_timers[param]->adjust(attotime::never);
 	}
 	m_key_held[param] = false;
-}
+}*/
 
 void cmi_music_keyboard_device::muskeys_map(address_map &map)
 {
@@ -400,7 +401,7 @@ static INPUT_PORTS_START(cmi_music_keyboard)
 	PORT_BIT(0x40, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_5_PAD) PORT_NAME("Keypad 0")
 	PORT_BIT(0x80, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_CODE(KEYCODE_6_PAD) PORT_NAME("Keypad 8")
 
-	/* Master musical keyboard */
+	/* Master musical keyboard
 	PORT_START("KEY_0_0")
 	PORT_BIT(0x01, IP_ACTIVE_LOW, IPT_OTHER) PORT_GM_F1       PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_music_keyboard_device::key_changed), cmi_music_keyboard_device::KEY_F1)
 	PORT_BIT(0x02, IP_ACTIVE_LOW, IPT_OTHER) PORT_GM_FS1      PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_music_keyboard_device::key_changed), cmi_music_keyboard_device::KEY_F1S)
@@ -501,7 +502,7 @@ static INPUT_PORTS_START(cmi_music_keyboard)
 	PORT_BIT(0xff, IP_ACTIVE_LOW, IPT_OTHER) PORT_GM_F7       PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(cmi_music_keyboard_device::key_changed), cmi_music_keyboard_device::KEY_F7)
 
 	PORT_START("ANALOG")
-	PORT_BIT(0xff, 0x00, IPT_PEDAL) PORT_MINMAX(0, 128) PORT_SENSITIVITY(100) PORT_KEYDELTA(50)
+	PORT_BIT(0xff, 0x00, IPT_PEDAL) PORT_MINMAX(0, 128) PORT_SENSITIVITY(100) PORT_KEYDELTA(50) */
 INPUT_PORTS_END
 
 ioport_constructor cmi_music_keyboard_device::device_input_ports() const
