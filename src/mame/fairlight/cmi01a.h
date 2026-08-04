@@ -6,8 +6,8 @@
 
 ***************************************************************************/
 
-#ifndef MAME_FAIRLIGHT_CMI01A_H
-#define MAME_FAIRLIGHT_CMI01A_H
+#ifndef MAME_AUDIO_CMI01A_H
+#define MAME_AUDIO_CMI01A_H
 
 #include "machine/6821pia.h"
 #include "machine/6840ptm.h"
@@ -33,9 +33,9 @@ public:
 	void set_master_osc(double mosc) { m_mosc = mosc; }
 
 protected:
-	virtual void device_start() override ATTR_COLD;
-	virtual void device_reset() override ATTR_COLD;
-	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+	virtual void device_start() override;
+	virtual void device_reset() override;
+	virtual void device_add_mconfig(machine_config &config) override;
 
 	required_device<input_merger_device> m_irq_merger;
 	required_device_array<pia6821_device, 2> m_pia;
@@ -81,22 +81,16 @@ private:
 	// New functions below this line
 	void update_rstb_pulser();
 	void set_run_load_xor(const bool run_load_xor);
-	TIMER_CALLBACK_MEMBER(rstb_pulse_cb);
-	void set_not_rstb(const bool not_rstb);
 
 	void update_bcas_q1_enable();
-	TIMER_CALLBACK_MEMBER(bcas_q1_tick);
 
 	void set_zx_flipflop_clock(const bool zx_ff_clk);
 	void set_zx_flipflop_state(const bool zx_ff);
 
 	void pulse_zcint();
-	TIMER_CALLBACK_MEMBER(zcint_pulse_cb);
-	void set_not_zcint(const bool not_zcint);
 
 	void set_not_load(const bool not_load);
 
-	void update_gzx();
 	void set_gzx(const bool gzx);
 
 	void update_not_eload();
@@ -117,16 +111,13 @@ private:
 	void set_wave_addr_lsb(const u8 wave_addr_lsb);
 	void set_wave_addr_msb(const u8 wave_addr_msb);
 	void set_wave_addr_msb_clock(const bool wave_addr_msb_clock);
-	void update_filters();
+	void update_filters(double dac_rate);
 
 	void set_zx(const bool zx);
 	void update_ptm_c1();
 
 	u32         m_channel;
 
-	emu_timer * m_zcint_pulse_timer = nullptr;
-	emu_timer * m_rstb_pulse_timer = nullptr;
-	emu_timer * m_bcas_q1_timer = nullptr;
 	emu_timer * m_sample_timer = nullptr;
 
 	devcb_write_line m_irq_cb;
@@ -146,7 +137,6 @@ private:
 	bool        m_run = false;
 	bool        m_not_rstb = true;
 	bool        m_not_load = false;
-	bool        m_not_zcint = true;
 	bool        m_not_wpe = true;
 	bool        m_new_addr = false;
 
@@ -155,10 +145,7 @@ private:
 	bool        m_not_eload = true;
 
 	bool        m_bcas_q1_enabled = true;
-	bool        m_bcas_q1 = false;
-	bool        m_bcas_q2 = false;
-	bool        m_mode_one = false;
-	
+
 	int         m_env_dir = 0;
 	u8          m_env = 0;
 	u8          m_env_divider = 0;
@@ -180,10 +167,29 @@ private:
 	bool        m_ptm_o3 = false;
 
 	u8          m_vol_latch = 0;
+	double last_vol = 0; //debug only
 	u8          m_flt_latch = 0;
 	u8          m_rp = 0;
 	u8          m_ws = 0;
 	int         m_dir = 0;
+	//uint8_t   m_ediv_rate = 0;
+	//uint8_t   m_ediv_count = 0;
+	//static const uint8_t s_7497_rate_table[64][64];
+	
+	bool 		m_mode1 = false;
+	
+	// Variances in components
+    double m_vari_vol = 0;
+    double m_vari_flt = 0;
+	
+	double m_main_out = 0;
+	double m_dc_prev_x = 0;
+    double m_dc_prev_y = 0;
+
+	inline double ssm2045_clip(double x) const;
+	
+	double		m_act_cfreq = 24000;
+	double		m_act_flt_scale = 0;
 
 	double      m_ha0 = 0;
 	double      m_ha1 = 0;
@@ -191,16 +197,27 @@ private:
 	double      m_hb1 = 0;
 	double      m_hc0 = 0;
 	double      m_hc1 = 0;
-
 	double      m_ka0 = 0;
 	double      m_ka1 = 0;
 	double      m_ka2 = 0;
 	double      m_kb0 = 0;
 	double      m_kb1 = 0;
 	double      m_kb2 = 0;
+	
+	// ENV. offset adjust (VR1)
+	double m_vr1_trim = 0.0;
+	
+	// Filter control bias (VR2)
+	double m_vr2_trim = 1.00;
+	
+	// VCA distortion (VR3)
+	double m_vr3_trim = 0.00001;
+	
+	// VC gain (VR5)
+	double m_vr5_trim = 2.0;
 };
 
 // device type definition
 DECLARE_DEVICE_TYPE(CMI01A_CHANNEL_CARD, cmi01a_device)
 
-#endif // MAME_FAIRLIGHT_CMI01A_H
+#endif // MAME_AUDIO_CMI01A_H

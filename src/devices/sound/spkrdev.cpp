@@ -72,7 +72,7 @@
  */
 
 #include "emu.h"
-#include "spkrdev.h"
+#include "sound/spkrdev.h"
 
 // The default is 1-bit, but can be customized with set_levels.
 static constexpr double default_levels[2] = { 0.0, 1.0 };
@@ -80,9 +80,7 @@ static constexpr double default_levels[2] = { 0.0, 1.0 };
 // Internal oversampling factor (intermediate samples vs stream samples)
 static constexpr int RATE_MULTIPLIER = 4;
 
-
 DEFINE_DEVICE_TYPE(SPEAKER_SOUND, speaker_sound_device, "speaker_sound_device", "Filtered DAC")
-
 
 speaker_sound_device::speaker_sound_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: device_t(mconfig, SPEAKER_SOUND, tag, owner, clock)
@@ -91,7 +89,6 @@ speaker_sound_device::speaker_sound_device(const machine_config &mconfig, const 
 	, m_levels(default_levels)
 {
 }
-
 
 //-------------------------------------------------
 //  device_start - device-specific startup
@@ -210,15 +207,24 @@ void speaker_sound_device::sound_stream_update(sound_stream &stream)
 	{
 		/* Note that first intermediate sample may be composed... */
 		filtered_volume = update_interm_samples_get_filtered_volume(volume);
-
+		
+		double hpf_out = filtered_volume - m_hpf_mem;
+		m_hpf_mem += alpha_hp * (filtered_volume - m_hpf_mem);
+		m_lpf_mem += alpha_lp * (hpf_out - m_lpf_mem);
+    
 		/* Composite volume is now quantized to the stream resolution */
-		stream.put(0, sampindex++, filtered_volume);
-
+		stream.put(0,sampindex++, (m_lpf_mem * 1.2));
+		
 		/* Any additional samples will be homogeneous, however may need filtering across samples: */
 		while (sampindex < stream.samples())
 		{
 			filtered_volume = update_interm_samples_get_filtered_volume(volume);
-			stream.put(0, sampindex++, filtered_volume);
+
+			hpf_out = filtered_volume - m_hpf_mem;
+			m_hpf_mem += alpha_hp * (filtered_volume - m_hpf_mem);
+			m_lpf_mem += alpha_lp * (hpf_out - m_lpf_mem);
+    
+			stream.put(0,sampindex++, (m_lpf_mem * 1.2));
 		}
 
 		/* Update the time state */
@@ -228,8 +234,6 @@ void speaker_sound_device::sound_stream_update(sound_stream &stream)
 		m_last_update_time = m_channel_last_sample_time;
 	}
 }
-
-
 
 void speaker_sound_device::level_w(int new_level)
 {
@@ -287,7 +291,6 @@ void speaker_sound_device::level_w(int new_level)
 	m_level = new_level;
 }
 
-
 void speaker_sound_device::update_interm_samples(const attotime &time, double volume)
 {
 	double fraction;
@@ -308,7 +311,6 @@ void speaker_sound_device::update_interm_samples(const attotime &time, double vo
 	m_composed_volume[m_composed_sample_index] += volume * fraction;
 	m_last_update_time = time;
 }
-
 
 double speaker_sound_device::update_interm_samples_get_filtered_volume(double volume)
 {
@@ -342,7 +344,6 @@ double speaker_sound_device::update_interm_samples_get_filtered_volume(double vo
 	return filtered_volume;
 }
 
-
 void speaker_sound_device::finalize_interm_sample(double volume)
 {
 	double fraction;
@@ -357,7 +358,6 @@ void speaker_sound_device::finalize_interm_sample(double volume)
 	/* For compatibility with filtering, do not incr. index and initialise next sample yet. */
 }
 
-
 void speaker_sound_device::init_next_interm_sample()
 {
 	/* Move the index and initialize next composed sample */
@@ -370,13 +370,11 @@ void speaker_sound_device::init_next_interm_sample()
 	/* No limit check on interm_sample_index here - to be handled by caller */
 }
 
-
 inline double speaker_sound_device::make_fraction(const attotime &a, const attotime &b, double timediv)
 {
 	/* fraction = (a - b) / timediv */
 	return (a - b).as_double() / timediv;
 }
-
 
 double speaker_sound_device::get_filtered_volume()
 {

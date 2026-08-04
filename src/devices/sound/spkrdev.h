@@ -38,7 +38,7 @@ private:
 	// Length of anti-aliasing filter kernel, measured in number of intermediate samples
 	enum
 	{
-		FILTER_LENGTH = 64
+		FILTER_LENGTH = 32 // 64
 	};
 
 	// internal state
@@ -81,6 +81,12 @@ private:
 
 	int          m_num_levels;  /* optional: number of levels (if not two) */
 	const double  *m_levels;     /* optional: pointer to level lookup table */
+	
+	// Band-pass filter
+	double m_hpf_mem = 0.0;
+	double m_lpf_mem = 0.0;
+	double alpha_hp = 0.09;
+	double alpha_lp = 0.23;
 };
 
 DECLARE_DEVICE_TYPE(SPEAKER_SOUND, speaker_sound_device)
